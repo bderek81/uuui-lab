@@ -1,4 +1,5 @@
 import argparse
+from collections import deque
 import heapq
 
 class Node:
@@ -30,13 +31,13 @@ def print_search_result(found_solution: bool, n: Node, closed: set):
 def breadthFirstSearch(s0, succ, goal):
     print(f"# BFS")
 
-    open = [Node(s0, 0, None)]
+    open = deque([Node(s0, 0, None)])
     closed = set()
 
     n = None
     found_solution = False
     while open:
-        n = open.pop(0)
+        n = open.popleft()
         if n.state in goal:
             found_solution = True
             break
@@ -73,9 +74,12 @@ def uniformCostSearch(s0, succ, goal):
 def aStarSearch(s0, succ, goal, h):
     pass
 
-def input_state_space(path_to_ss):
-    with open(f"files/{path_to_ss}") as ss_file:
-        lines = list(filter(lambda x: x[0] != '#', ss_file.readlines()))
+def input_state_space(ss):
+    with open(ss) as ss_file:
+        lines = list(map(
+            lambda x: x.strip(),
+            filter(lambda y: y[0] != '#', ss_file.readlines())
+        ))
     
     s0 = lines[0].strip()
     goal = set(lines[1].split())
