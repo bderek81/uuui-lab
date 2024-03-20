@@ -29,7 +29,7 @@ def print_search_result(found_solution: bool, n: Node, closed: set):
     print(f"[TOTAL_COST]: {total_cost}")
     print(f"[PATH]: {' => '.join(reversed(path))}")
 
-def breadthFirstSearch(s0, succ, goal):
+def breadth_first_search(s0, succ, goal):
     open = deque([Node(s0, 0, None)])
     closed = set()
 
@@ -48,7 +48,7 @@ def breadthFirstSearch(s0, succ, goal):
     
     print_search_result(found_solution, n, closed)
 
-def uniformCostSearch(s0, succ, goal):
+def uniform_cost_search(s0, succ, goal):
     open = [Node(s0, 0, None)]
     heapq.heapify(open)
     closed = set()
@@ -68,7 +68,7 @@ def uniformCostSearch(s0, succ, goal):
     
     print_search_result(found_solution, n, closed)
 
-def aStarSearch(s0, succ, goal, h):
+def a_star_search(s0, succ, goal, h):
     open = [Node(s0, 0, None)]
     heapq.heapify(open)
     closed = set()
@@ -107,6 +107,23 @@ def aStarSearch(s0, succ, goal, h):
             heapq.heappush(open, Node(m[0], n.g + m[1], n, h[m[0]]))
     
     print_search_result(found_solution, n, closed)
+
+def check_optimistic():
+    pass
+
+def check_consistent(succ, h):
+    conclusion = True
+    for s1 in sorted(succ.keys()):
+        for s2, c in succ[s1]:
+            condition = h[s1] <= h[s2] + c
+            print(
+                f"[CONDITION]: [{'OK' if condition else 'ERR'}] "
+                f"h({s1}) <= h({s2}) + c: "
+                f"{h[s1]} <= {h[s2]} + {c}"
+            )
+            conclusion &= condition
+    
+    print(f"[CONCLUSION]: Heuristic is {'' if conclusion else 'not '}consistent.")
 
 def get_lines(file):
     with open(file) as f:
@@ -163,13 +180,19 @@ def main():
 
     if args.alg == "bfs":
         print(f"# BFS")
-        breadthFirstSearch(s0, succ, goal)
+        breadth_first_search(s0, succ, goal)
     elif args.alg == "ucs":
         print(f"# UCS")
-        uniformCostSearch(s0, succ, goal)
+        uniform_cost_search(s0, succ, goal)
     elif args.alg == "astar":
         print(f"# A-STAR {args.h}")
-        aStarSearch(s0, succ, goal, h)
+        a_star_search(s0, succ, goal, h)
+    
+    if False:
+        pass
+    elif args.check_consistent:
+        print(f"# HEURISTIC-CONSISTENT {args.h}")
+        check_consistent(succ, h)
 
 if __name__ == "__main__":
     main()
