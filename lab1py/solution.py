@@ -3,7 +3,7 @@ from collections import deque
 import heapq
 
 class Node:
-    def __init__(self, state, g, parent, heuristic_value=0.0):
+    def __init__(self, state: str, g: float, parent, heuristic_value=0.0):
         self.state = state
         self.g = g
         self.parent = parent
@@ -29,7 +29,7 @@ def print_search_result(found_solution: bool, n: Node, closed: set):
     print(f"[TOTAL_COST]: {total_cost}")
     print(f"[PATH]: {' => '.join(reversed(path))}")
 
-def breadth_first_search(s0, succ, goal):
+def breadth_first_search(s0: str, succ: dict, goal: set):
     open = deque([Node(s0, 0.0, None)])
     closed = set()
 
@@ -48,7 +48,7 @@ def breadth_first_search(s0, succ, goal):
     
     return found_solution, n, closed
 
-def uniform_cost_search(s0, succ, goal):
+def uniform_cost_search(s0: str, succ: dict, goal: set):
     open = [Node(s0, 0.0, None)]
     heapq.heapify(open)
     closed = set()
@@ -68,7 +68,7 @@ def uniform_cost_search(s0, succ, goal):
     
     return found_solution, n, closed
 
-def a_star_search(s0, succ, goal, h):
+def a_star_search(s0: str, succ: dict, goal: set, h: dict):
     open = [Node(s0, 0.0, None)]
     heapq.heapify(open)
     closed = set()
@@ -106,7 +106,7 @@ def a_star_search(s0, succ, goal, h):
     
     return found_solution, n, closed
 
-def check_optimistic(succ, goal, h):
+def check_optimistic(succ: dict, goal: set, h: dict):
     conclusion = True
 
     for s in sorted(succ.keys()):
@@ -124,7 +124,7 @@ def check_optimistic(succ, goal, h):
 
     print(f"[CONCLUSION]: Heuristic is {'' if conclusion else 'not '}optimistic.")
 
-def check_consistent(succ, h):
+def check_consistent(succ: dict, h: dict):
     conclusion = True
     for s1 in sorted(succ.keys()):
         for s2, c in succ[s1]:
@@ -202,7 +202,8 @@ def main():
     if args.check_optimistic:
         print(f"# HEURISTIC-OPTIMISTIC {args.h}")
         check_optimistic(succ, goal, h)
-    elif args.check_consistent:
+    
+    if args.check_consistent:
         print(f"# HEURISTIC-CONSISTENT {args.h}")
         check_consistent(succ, h)
 
