@@ -30,7 +30,7 @@ def print_search_result(found_solution: bool, n: Node, closed: set):
     print(f"[PATH]: {' => '.join(reversed(path))}")
 
 def breadth_first_search(s0, succ, goal):
-    open = deque([Node(s0, 0, None)])
+    open = deque([Node(s0, 0.0, None)])
     closed = set()
 
     n = None
@@ -46,10 +46,10 @@ def breadth_first_search(s0, succ, goal):
             if m[0] not in closed:
                 open.append(Node(m[0], n.g + m[1], n))
     
-    print_search_result(found_solution, n, closed)
+    return found_solution, n, closed
 
 def uniform_cost_search(s0, succ, goal):
-    open = [Node(s0, 0, None)]
+    open = [Node(s0, 0.0, None)]
     heapq.heapify(open)
     closed = set()
 
@@ -66,10 +66,10 @@ def uniform_cost_search(s0, succ, goal):
             if m[0] not in closed:
                 heapq.heappush(open, Node(m[0], n.g + m[1], n))
     
-    print_search_result(found_solution, n, closed)
+    return found_solution, n, closed
 
 def a_star_search(s0, succ, goal, h):
-    open = [Node(s0, 0, None)]
+    open = [Node(s0, 0.0, None)]
     heapq.heapify(open)
     closed = set()
 
@@ -95,21 +95,34 @@ def a_star_search(s0, succ, goal, h):
             
             # if exists m' such that:
             if m_ is not None:
-                if m_.g < n.g + m[1]:
-                    continue
+                if m_.g < n.g + m[1]: continue
                 else:
-                    if m_ in closed:
-                        closed.remove(m_)
+                    if m_ in closed: closed.remove(m_)
                     else:
                         open.remove(m_)
                         heapq.heapify(open)
             
             heapq.heappush(open, Node(m[0], n.g + m[1], n, h[m[0]]))
     
-    print_search_result(found_solution, n, closed)
+    return found_solution, n, closed
 
-def check_optimistic():
-    pass
+def check_optimistic(succ, goal, h):
+    conclusion = True
+
+    for s in sorted(succ.keys()):
+        _, n, _ = uniform_cost_search(s, succ, goal)
+        h_star = n.g
+        condition = h[s] <= h_star
+
+        print(
+                f"[CONDITION]: [{'OK' if condition else 'ERR'}] "
+                f"h({s}) <= h*: "
+                f"{h[s]} <= {h_star}"
+            )
+
+        conclusion &= condition
+
+    print(f"[CONCLUSION]: Heuristic is {'' if conclusion else 'not '}optimistic.")
 
 def check_consistent(succ, h):
     conclusion = True
@@ -174,22 +187,21 @@ def main():
     args = parse_arguments()
 
     s0, succ, goal = input_state_space(args.ss)
-
-    if args.h:
-        h = input_heuristic(args.h)
+    if args.h: h = input_heuristic(args.h)
 
     if args.alg == "bfs":
         print(f"# BFS")
-        breadth_first_search(s0, succ, goal)
+        print_search_result(*breadth_first_search(s0, succ, goal))
     elif args.alg == "ucs":
         print(f"# UCS")
-        uniform_cost_search(s0, succ, goal)
+        print_search_result(*uniform_cost_search(s0, succ, goal))
     elif args.alg == "astar":
         print(f"# A-STAR {args.h}")
-        a_star_search(s0, succ, goal, h)
+        print_search_result(*a_star_search(s0, succ, goal, h))
     
-    if False:
-        pass
+    if args.check_optimistic:
+        print(f"# HEURISTIC-OPTIMISTIC {args.h}")
+        check_optimistic(succ, goal, h)
     elif args.check_consistent:
         print(f"# HEURISTIC-CONSISTENT {args.h}")
         check_consistent(succ, h)
