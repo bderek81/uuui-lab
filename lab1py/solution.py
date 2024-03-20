@@ -108,17 +108,16 @@ def a_star_search(s0: str, succ: dict, goal: set, h: dict):
 
 def check_optimistic(succ: dict, goal: set, h: dict):
     conclusion = True
-
     for s in sorted(succ.keys()):
         _, n, _ = uniform_cost_search(s, succ, goal)
         h_star = n.g
         condition = h[s] <= h_star
 
         print(
-                f"[CONDITION]: [{'OK' if condition else 'ERR'}] "
-                f"h({s}) <= h*: "
-                f"{h[s]} <= {h_star}"
-            )
+            f"[CONDITION]: [{'OK' if condition else 'ERR'}] "
+            f"h({s}) <= h*: "
+            f"{h[s]} <= {h_star}"
+        )
 
         conclusion &= condition
 
@@ -129,11 +128,13 @@ def check_consistent(succ: dict, h: dict):
     for s1 in sorted(succ.keys()):
         for s2, c in succ[s1]:
             condition = h[s1] <= h[s2] + c
+
             print(
                 f"[CONDITION]: [{'OK' if condition else 'ERR'}] "
                 f"h({s1}) <= h({s2}) + c: "
                 f"{h[s1]} <= {h[s2]} + {c}"
             )
+            
             conclusion &= condition
     
     print(f"[CONCLUSION]: Heuristic is {'' if conclusion else 'not '}consistent.")
