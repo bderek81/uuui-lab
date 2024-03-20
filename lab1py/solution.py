@@ -3,20 +3,21 @@ from collections import deque
 import heapq
 
 class Node:
-    def __init__(self, state, depth, parent):
+    def __init__(self, state, g, parent, heuristic_value=0.0):
         self.state = state
-        self.depth = depth
+        self.g = g
         self.parent = parent
+        self.heuristic_value = heuristic_value
     
     def __lt__(self, other):
-        return self.depth < other.depth
+        return self.g + self.heuristic_value < other.g + other.heuristic_value
 
 def print_search_result(found_solution: bool, n: Node, closed: set):
     if not found_solution:
         print(f"[FOUND_SOLUTION]: no")
         return
     
-    total_cost = n.depth
+    total_cost = n.g
     path = []
     while n is not None:
         path.append(n.state)
@@ -29,8 +30,6 @@ def print_search_result(found_solution: bool, n: Node, closed: set):
     print(f"[PATH]: {' => '.join(reversed(path))}")
 
 def breadthFirstSearch(s0, succ, goal):
-    print(f"# BFS")
-
     open = deque([Node(s0, 0, None)])
     closed = set()
 
@@ -45,13 +44,11 @@ def breadthFirstSearch(s0, succ, goal):
 
         for m in succ[n.state]:
             if m[0] not in closed:
-                open.append(Node(m[0], n.depth + m[1], n))
+                open.append(Node(m[0], n.g + m[1], n))
     
     print_search_result(found_solution, n, closed)
 
 def uniformCostSearch(s0, succ, goal):
-    print(f"# UCS")
-
     open = [Node(s0, 0, None)]
     heapq.heapify(open)
     closed = set()
@@ -67,12 +64,51 @@ def uniformCostSearch(s0, succ, goal):
 
         for m in succ[n.state]:
             if m[0] not in closed:
-                heapq.heappush(open, Node(m[0], n.depth + m[1], n))
+                heapq.heappush(open, Node(m[0], n.g + m[1], n))
     
     print_search_result(found_solution, n, closed)
 
 def aStarSearch(s0, succ, goal, h):
-    pass
+    open = [Node(s0, 0, None)]
+    heapq.heapify(open)
+    closed = set()
+
+    n = None
+    found_solution = False
+    while open:
+        n = heapq.heappop(open)
+        if n.state in goal:
+            found_solution = True
+            break
+        closed.add(n)
+
+        for m in succ[n.state]:
+            m_ = None
+            m_in_closed = False
+            for c in closed:
+                if c.state == m[0]:
+                    m_ = c
+                    m_in_closed = True
+                    break
+            if not m_in_closed:
+                for o in open:
+                    if o.state == m[0]:
+                        m_= o
+                        break
+            # if exists m such that:
+            if m_ is not None:
+                if m_.g < n.g + m[1]:
+                    continue
+                else:
+                    if m_in_closed:
+                        closed.remove(m_)
+                    else:
+                        open.remove(m_)
+                        heapq.heapify(open)
+            
+            heapq.heappush(open, Node(m[0], n.g + m[1], n, h[m[0]]))
+    
+    print_search_result(found_solution, n, closed)
 
 def get_lines(file):
     with open(file) as f:
@@ -128,10 +164,13 @@ def main():
         h = input_heuristic(args.h)
 
     if args.alg == "bfs":
+        print(f"# BFS")
         breadthFirstSearch(s0, succ, goal)
     elif args.alg == "ucs":
+        print(f"# UCS")
         uniformCostSearch(s0, succ, goal)
     elif args.alg == "astar":
+        print(f"# A-STAR {args.h}")
         aStarSearch(s0, succ, goal, h)
 
 if __name__ == "__main__":
