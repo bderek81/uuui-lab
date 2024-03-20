@@ -83,24 +83,22 @@ def aStarSearch(s0, succ, goal, h):
         closed.add(n)
 
         for m in succ[n.state]:
-            m_ = None
-            m_in_closed = False
-            for c in closed:
-                if c.state == m[0]:
-                    m_ = c
-                    m_in_closed = True
-                    break
-            if not m_in_closed:
-                for o in open:
-                    if o.state == m[0]:
-                        m_= o
-                        break
-            # if exists m such that:
+            m_ = next(filter(
+                lambda c: c.state == m[0],
+                closed
+            ), None)
+            if m_ is None:
+                m_ = next(filter(
+                    lambda o: o.state == m[0],
+                    open
+                ), None)
+            
+            # if exists m' such that:
             if m_ is not None:
                 if m_.g < n.g + m[1]:
                     continue
                 else:
-                    if m_in_closed:
+                    if m_ in closed:
                         closed.remove(m_)
                     else:
                         open.remove(m_)
