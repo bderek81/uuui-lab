@@ -74,17 +74,20 @@ def uniformCostSearch(s0, succ, goal):
 def aStarSearch(s0, succ, goal, h):
     pass
 
-def input_state_space(ss):
-    with open(ss) as ss_file:
-        lines = list(map(
-            lambda x: x.strip(),
-            filter(lambda y: y[0] != '#', ss_file.readlines())
+def get_lines(file):
+    with open(file) as f:
+        return list(map(
+            lambda l: l.strip(),
+            filter(lambda line: line[0] != '#', f.readlines())
         ))
-    
-    s0 = lines[0].strip()
-    goal = set(lines[1].split())
+
+def input_state_space(ss):
+    lines = get_lines(ss)
 
     succ = dict()
+    
+    s0 = lines[0]
+    goal = set(lines[1].split())
     for line in lines[2:]:
         state, dests = line.split(':')
 
@@ -96,8 +99,14 @@ def input_state_space(ss):
     
     return s0, succ, goal
 
-def input_heuristic(path_to_h):
-    return None
+def input_heuristic(h):
+    lines = get_lines(h)
+
+    heuristic = dict()
+    for state, heuristic_value in map(lambda l: l.split(':'), lines):
+        heuristic[state] = float(heuristic_value)
+
+    return heuristic
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
