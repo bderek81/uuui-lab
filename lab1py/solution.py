@@ -86,18 +86,17 @@ def a_star_search(s0: str, succ: dict, goal: set, h: dict):
             m_ = next(filter(
                 lambda c: c.state == m[0],
                 closed
-            ), None)
-            if m_ is None:
-                m_ = next(filter(
-                    lambda o: o.state == m[0],
-                    open
-                ), None)
+            ), next(filter(
+                lambda o: o.state == m[0],
+                open
+            ), None))
             
             # if exists m' such that:
             if m_ is not None:
                 if m_.g < n.g + m[1]: continue
                 else:
-                    if m_ in closed: closed.remove(m_)
+                    if m_ in closed:
+                        closed.remove(m_)
                     else:
                         open.remove(m_)
                         heapq.heapify(open)
