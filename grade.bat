@@ -2,9 +2,11 @@
 set JMBAG=0036542918
 
 set lab=1
-mkdir autograder\solutions\%JMBAG%
-zip -r autograder\solutions\%JMBAG%\%JMBAG%.zip lab%lab%py\*
+set grader=autograder
 
-cd autograder
+mkdir %grader%\solutions\%JMBAG%
+zip -r %grader%\solutions\%JMBAG%\%JMBAG%.zip lab%lab%py
+
+cd %grader%
 python autograder.py lab%lab%
 cd ..
