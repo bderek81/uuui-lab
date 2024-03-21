@@ -68,6 +68,13 @@ def uniform_cost_search(s0: str, succ: dict, goal: set):
     
     return found_solution, n, closed
 
+def find_mp(iterable: "list[Node]", m: tuple):
+    for i, m_i in enumerate(iterable):
+        if m_i.state == m[0]:
+            return i, m_i
+    
+    return None, None
+
 def a_star_search(s0: str, succ: dict, goal: set, h: dict):
     open = [Node(s0, 0.0, None)]
     heapq.heapify(open)
@@ -83,22 +90,18 @@ def a_star_search(s0: str, succ: dict, goal: set, h: dict):
         closed.add(n)
 
         for m in succ[n.state]:
-            m_ = next(filter(
-                lambda c: c.state == m[0],
-                closed
-            ), next(filter(
-                lambda o: o.state == m[0],
-                open
-            ), None))
+            i_mp, mp = find_mp(closed, m)
+            if mp is None:
+                i_mp, mp = find_mp(open, m)
             
             # if exists m' such that:
-            if m_ is not None:
-                if m_.g < n.g + m[1]: continue
+            if mp is not None:
+                if mp.g < n.g + m[1]: continue
                 else:
-                    if m_ in closed:
-                        closed.remove(m_)
+                    if mp in closed:
+                        closed.remove(mp)
                     else:
-                        open.remove(m_)
+                        del open[i_mp]
                         heapq.heapify(open)
             
             heapq.heappush(open, Node(m[0], n.g + m[1], n, h[m[0]]))
@@ -138,39 +141,27 @@ def check_consistent(succ: dict, h: dict):
     
     print(f"[CONCLUSION]: Heuristic is {'' if conclusion else 'not '}consistent.")
 
-def get_lines(file):
+def lines(file):
     with open(file) as f:
-        return list(map(
-            lambda l: l.strip(),
-            filter(lambda line: line[0] != '#', f.readlines())
-        ))
+        return [line.strip() for line in f.readlines() if line[0] != '#']
 
-def input_state_space(ss):
-    lines = get_lines(ss)
-
-    succ = dict()
-    
+def input_state_space(lines: "list[str]"):
     s0 = lines[0]
     goal = set(lines[1].split())
-    for line in lines[2:]:
-        state, dests = line.split(':')
-
-        succ[state] = []
-        for dest in dests.split():
-            s,d = dest.split(',')
-            d = float(d)
-            succ[state].append((s,d))
+    succ = dict()
+    for state, trans in map(lambda l: l.split(':'), lines[2:]):
+        succ[state] = [
+            (next, float(cost))
+            for next,cost in map(lambda t: t.split(','), trans.split())
+        ]
     
     return s0, succ, goal
 
-def input_heuristic(h):
-    lines = get_lines(h)
-
-    heuristic = dict()
-    for state, heuristic_value in map(lambda l: l.split(':'), lines):
-        heuristic[state] = float(heuristic_value)
-
-    return heuristic
+def input_heuristic(lines: "list[str]"):
+    return {
+        state: float(heuristic_value) 
+        for state, heuristic_value in map(lambda l: l.split(':'), lines)
+    }
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
@@ -186,8 +177,8 @@ def parse_arguments():
 def main():
     args = parse_arguments()
 
-    s0, succ, goal = input_state_space(args.ss)
-    if args.h: h = input_heuristic(args.h)
+    s0, succ, goal = input_state_space(lines(args.ss))
+    if args.h: h = input_heuristic(lines(args.h))
 
     if args.alg == "bfs":
         print(f"# BFS")
