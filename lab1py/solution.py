@@ -142,22 +142,21 @@ def check_consistent(succ: dict, h: dict):
     print(f"[CONCLUSION]: Heuristic is {'' if conclusion else 'not '}consistent.")
 
 def lines(file):
-    with open(file) as f:
-        return [line.strip() for line in f.readlines() if line[0] != '#']
+    return (line.strip() for line in open(file) if line[0] != '#')
 
-def input_state_space(lines: "list[str]"):
-    s0 = lines[0]
-    goal = set(lines[1].split())
+def input_state_space(lines):
+    s0 = next(lines)
+    goal = set(next(lines).split())
     succ = dict()
-    for state, trans in map(lambda l: l.split(':'), lines[2:]):
+    for state, trans in map(lambda l: l.split(':'), lines):
         succ[state] = [
-            (next, float(cost))
-            for next,cost in map(lambda t: t.split(','), trans.split())
+            (next_state, float(cost))
+            for next_state,cost in map(lambda t: t.split(','), trans.split())
         ]
     
     return s0, succ, goal
 
-def input_heuristic(lines: "list[str]"):
+def input_heuristic(lines):
     return {
         state: float(heuristic_value) 
         for state, heuristic_value in map(lambda l: l.split(':'), lines)
