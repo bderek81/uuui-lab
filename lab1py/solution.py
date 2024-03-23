@@ -1,6 +1,7 @@
 import argparse
 from collections import deque
 import heapq
+from math import isclose
 
 class Node:
     def __init__(self, state: str, g: float, parent: 'Node', heuristic_value=0.0):
@@ -9,12 +10,15 @@ class Node:
         self.parent = parent
         self.heuristic_value = heuristic_value
     
-    def __lt__(self, other):
+    def __lt__(self, other: 'Node'):
+        if isclose(self.g + self.heuristic_value, other.g + other.heuristic_value):
+            return self.state < other.state
+        
         return self.g + self.heuristic_value < other.g + other.heuristic_value
 
 def print_search_result(found_solution: bool, states_visited: int, n: Node):
+    print(f"[FOUND_SOLUTION]: {'yes' if found_solution else 'no'}")
     if not found_solution:
-        print(f"[FOUND_SOLUTION]: no")
         return
     
     total_cost = n.g
@@ -23,7 +27,6 @@ def print_search_result(found_solution: bool, states_visited: int, n: Node):
         path.append(n.state)
         n = n.parent
     
-    print(f"[FOUND_SOLUTION]: yes")
     print(f"[STATES_VISITED]: {states_visited}")
     print(f"[PATH_LENGTH]: {len(path)}")
     print(f"[TOTAL_COST]: {total_cost}")
@@ -42,7 +45,7 @@ def breadth_first_search(s0: str, succ: dict, goal: set):
             break
         closed.add(n.state)
 
-        for m in succ[n.state]:
+        for m in sorted(succ[n.state]):
             if m[0] not in closed:
                 open.append(Node(m[0], n.g + m[1], n))
     
@@ -110,7 +113,7 @@ def a_star_search(s0: str, succ: dict, goal: set, h: dict):
 
 def check_optimistic(succ: dict, goal: set, h: dict):
     conclusion = True
-    for s in sorted(succ.keys()):
+    for s in sorted(succ):
         _, _, n = uniform_cost_search(s, succ, goal)
         h_star = n.g
         condition = h[s] <= h_star
@@ -127,7 +130,7 @@ def check_optimistic(succ: dict, goal: set, h: dict):
 
 def check_consistent(succ: dict, h: dict):
     conclusion = True
-    for s1 in sorted(succ.keys()):
+    for s1 in sorted(succ):
         for s2, c in succ[s1]:
             condition = h[s1] <= h[s2] + c
 
