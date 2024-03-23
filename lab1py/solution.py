@@ -3,7 +3,7 @@ from collections import deque
 import heapq
 
 class Node:
-    def __init__(self, state: str, g: float, parent, heuristic_value=0.0):
+    def __init__(self, state: str, g: float, parent: 'Node', heuristic_value=0.0):
         self.state = state
         self.g = g
         self.parent = parent
@@ -12,7 +12,7 @@ class Node:
     def __lt__(self, other):
         return self.g + self.heuristic_value < other.g + other.heuristic_value
 
-def print_search_result(found_solution: bool, n: Node, closed: set):
+def print_search_result(found_solution: bool, states_visited: int, n: Node):
     if not found_solution:
         print(f"[FOUND_SOLUTION]: no")
         return
@@ -24,7 +24,7 @@ def print_search_result(found_solution: bool, n: Node, closed: set):
         n = n.parent
     
     print(f"[FOUND_SOLUTION]: yes")
-    print(f"[STATES_VISITED]: {len(closed)}")
+    print(f"[STATES_VISITED]: {states_visited}")
     print(f"[PATH_LENGTH]: {len(path)}")
     print(f"[TOTAL_COST]: {total_cost}")
     print(f"[PATH]: {' => '.join(reversed(path))}")
@@ -46,7 +46,7 @@ def breadth_first_search(s0: str, succ: dict, goal: set):
             if m[0] not in closed:
                 open.append(Node(m[0], n.g + m[1], n))
     
-    return found_solution, n, closed
+    return found_solution, len(closed), n
 
 def uniform_cost_search(s0: str, succ: dict, goal: set):
     open = [Node(s0, 0.0, None)]
@@ -66,9 +66,9 @@ def uniform_cost_search(s0: str, succ: dict, goal: set):
             if m[0] not in closed:
                 heapq.heappush(open, Node(m[0], n.g + m[1], n))
     
-    return found_solution, n, closed
+    return found_solution, len(closed), n
 
-def find_mp(iterable: "list[Node]", m: tuple):
+def find_mp(iterable: 'list[Node]', m: tuple):
     for i, m_i in enumerate(iterable):
         if m_i.state == m[0]:
             return i, m_i
@@ -76,7 +76,7 @@ def find_mp(iterable: "list[Node]", m: tuple):
     return None, None
 
 def a_star_search(s0: str, succ: dict, goal: set, h: dict):
-    open = [Node(s0, 0.0, None)]
+    open = [Node(s0, 0.0, None, h[s0])]
     heapq.heapify(open)
     closed = set()
 
@@ -106,12 +106,12 @@ def a_star_search(s0: str, succ: dict, goal: set, h: dict):
             
             heapq.heappush(open, Node(m[0], n.g + m[1], n, h[m[0]]))
     
-    return found_solution, n, closed
+    return found_solution, len(closed), n
 
 def check_optimistic(succ: dict, goal: set, h: dict):
     conclusion = True
     for s in sorted(succ.keys()):
-        _, n, _ = uniform_cost_search(s, succ, goal)
+        _, _, n = uniform_cost_search(s, succ, goal)
         h_star = n.g
         condition = h[s] <= h_star
 
