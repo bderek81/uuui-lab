@@ -8,13 +8,13 @@ class Node:
         self.state = state
         self.g = g
         self.parent = parent
-        self.heuristic_value = heuristic_value
+        self.f = g + heuristic_value
     
     def __lt__(self, other: 'Node'):
-        if isclose(self.g + self.heuristic_value, other.g + other.heuristic_value):
+        if isclose(self.f, other.f):
             return self.state < other.state
         
-        return self.g + self.heuristic_value < other.g + other.heuristic_value
+        return self.f < other.f
 
 def print_search_result(found_solution: bool, states_visited: int, n: Node):
     print(f"[FOUND_SOLUTION]: {'yes' if found_solution else 'no'}")
@@ -87,12 +87,12 @@ def a_star_search(s0: str, succ: dict, goal: set, h: dict):
         closed[n.state] = n.g
 
         for m in succ[n.state]:
-            if m[0] in open_dict:
-                if open_dict[m[0]] < n.g + m[1]: continue
-                else: del open_dict[m[0]]
             if m[0] in closed:
                 if closed[m[0]] < n.g + m[1]: continue
                 else: del closed[m[0]]
+            if m[0] in open_dict:
+                if open_dict[m[0]] < n.g + m[1]: continue
+                else: del open_dict[m[0]]
             
             heapq.heappush(open, Node(m[0], n.g + m[1], n, h[m[0]]))
             open_dict[m[0]] = n.g + m[1]
