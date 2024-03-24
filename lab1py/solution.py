@@ -33,7 +33,8 @@ def print_search_result(found_solution: bool, states_visited: int, n: Node):
     print(f"[PATH]: {' => '.join(reversed(path))}")
 
 def breadth_first_search(s0: str, succ: dict, goal: set):
-    open = deque([Node(s0, 0.0, None)])
+    initial = Node(s0, 0.0, None)
+    open = deque([initial])
     closed = set()
 
     n = None
@@ -52,8 +53,8 @@ def breadth_first_search(s0: str, succ: dict, goal: set):
     return found_solution, len(closed), n
 
 def uniform_cost_search(s0: str, succ: dict, goal: set):
-    open = [Node(s0, 0.0, None)]
-    heapq.heapify(open)
+    initial = Node(s0, 0.0, None)
+    open = [initial]
     closed = set()
 
     n = None
@@ -71,17 +72,10 @@ def uniform_cost_search(s0: str, succ: dict, goal: set):
     
     return found_solution, len(closed), n
 
-def find_mp(iterable: 'list[Node]', m: tuple):
-    for i, m_i in enumerate(iterable):
-        if m_i.state == m[0]:
-            return i, m_i
-    
-    return None, None
-
 def a_star_search(s0: str, succ: dict, goal: set, h: dict):
-    open = [Node(s0, 0.0, None, h[s0])]
-    heapq.heapify(open)
-    closed = set()
+    initial = Node(s0, 0.0, None, h[s0])
+    open, open_dict = [initial], {initial.state : initial.g}
+    closed = dict()
 
     n = None
     found_solution = False
@@ -90,24 +84,18 @@ def a_star_search(s0: str, succ: dict, goal: set, h: dict):
         if n.state in goal:
             found_solution = True
             break
-        closed.add(n)
+        closed[n.state] = n.g
 
         for m in succ[n.state]:
-            i_mp, mp = find_mp(closed, m)
-            if mp is None:
-                i_mp, mp = find_mp(open, m)
-            
-            # if exists m' such that:
-            if mp is not None:
-                if mp.g < n.g + m[1]: continue
-                else:
-                    if mp in closed:
-                        closed.remove(mp)
-                    else:
-                        del open[i_mp]
-                        heapq.heapify(open)
+            if m[0] in open_dict:
+                if open_dict[m[0]] < n.g + m[1]: continue
+                else: del open_dict[m[0]]
+            if m[0] in closed:
+                if closed[m[0]] < n.g + m[1]: continue
+                else: del closed[m[0]]
             
             heapq.heappush(open, Node(m[0], n.g + m[1], n, h[m[0]]))
+            open_dict[m[0]] = n.g + m[1]
     
     return found_solution, len(closed), n
 
@@ -145,7 +133,7 @@ def check_consistent(succ: dict, h: dict):
     print(f"[CONCLUSION]: Heuristic is {'' if conclusion else 'not '}consistent.")
 
 def lines(file):
-    return (line.strip() for line in open(file) if line[0] != '#')
+    return (line.rstrip() for line in open(file) if line[0] != '#')
 
 def input_state_space(lines):
     s0 = next(lines)
