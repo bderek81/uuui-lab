@@ -28,7 +28,7 @@ def print_search_result(found_solution: bool, states_visited: int, n: Node):
     
     print(f"[STATES_VISITED]: {states_visited}")
     print(f"[PATH_LENGTH]: {len(path)}")
-    print(f"[TOTAL_COST]: {total_cost}")
+    print(f"[TOTAL_COST]: {total_cost:.1f}")
     print(f"[PATH]: {' => '.join(reversed(path))}")
 
 def breadth_first_search(s0: str, succ: dict, goal: set):
@@ -109,7 +109,7 @@ def check_optimistic(succ: dict, goal: set, h: dict):
         print(
             f"[CONDITION]: [{'OK' if condition else 'ERR'}] "
             f"h({s}) <= h*: "
-            f"{h[s]} <= {h_star}"
+            f"{h[s]:.1f} <= {h_star:.1f}"
         )
 
         conclusion &= condition
@@ -125,7 +125,7 @@ def check_consistent(succ: dict, h: dict):
             print(
                 f"[CONDITION]: [{'OK' if condition else 'ERR'}] "
                 f"h({s1}) <= h({s2}) + c: "
-                f"{h[s1]} <= {h[s2]} + {c}"
+                f"{h[s1]:.1f} <= {h[s2]:.1f} + {c:.1f}"
             )
             
             conclusion &= condition
