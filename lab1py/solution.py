@@ -18,8 +18,7 @@ class Node:
 
 def print_search_result(found_solution: bool, states_visited: int, n: Node):
     print(f"[FOUND_SOLUTION]: {'yes' if found_solution else 'no'}")
-    if not found_solution:
-        return
+    if not found_solution: return
     
     total_cost = n.g
     path = []
@@ -74,13 +73,14 @@ def uniform_cost_search(s0: str, succ: dict, goal: set):
 
 def a_star_search(s0: str, succ: dict, goal: set, h: dict):
     initial = Node(s0, 0.0, None, h[s0])
-    open, open_dict = [initial], {initial.state : initial.g}
+    open, open_dict = [initial], {initial.state: initial.g}
     closed = dict()
 
     n = None
     found_solution = False
     while open:
         n = heapq.heappop(open)
+        open_dict.pop(n.state, None)
         if n.state in goal:
             found_solution = True
             break
