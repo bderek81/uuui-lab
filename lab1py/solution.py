@@ -21,15 +21,15 @@ def print_search_result(found_solution: bool, states_visited: int, n: Node):
     if not found_solution: return
     
     total_cost = n.g
-    path = []
+    path = deque()
     while n is not None:
-        path.append(n.state)
+        path.appendleft(n.state)
         n = n.parent
     
     print(f"[STATES_VISITED]: {states_visited}")
     print(f"[PATH_LENGTH]: {len(path)}")
     print(f"[TOTAL_COST]: {total_cost:.1f}")
-    print(f"[PATH]: {' => '.join(reversed(path))}")
+    print(f"[PATH]: {' => '.join(path)}")
 
 def breadth_first_search(s0: str, succ: dict, goal: set):
     initial = Node(s0, 0.0, None)
