@@ -1,7 +1,7 @@
 @echo off
 set JMBAG=0036542918
 
-set lab=1
+set lab=2
 set grader=autograder
 
 mkdir %grader%\solutions\%JMBAG%
