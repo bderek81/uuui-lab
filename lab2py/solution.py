@@ -32,8 +32,6 @@ def negate(literal: str):
     return f"~{literal}" if literal[0] != '~' else literal[1:]
 
 def remove_redundant(clauses: 'set[Clause]'):
-    non_redundant_clauses = set()
-
     for c1 in clauses:
         redundant = False
         for c2 in clauses:
@@ -41,75 +39,55 @@ def remove_redundant(clauses: 'set[Clause]'):
                 redundant = True
                 break
         if redundant: continue
-        non_redundant_clauses.add(c1)
-    
-    return set(non_redundant_clauses)
+        yield c1
 
 def remove_irrelevant(clauses: 'set[Clause]'):
     return set(filter(lambda clause: not clause.is_tautology(), clauses))
 
 def select_clauses(clauses: 'set[Clause]'):
-    selected = set()
-
+    visited = set()
     for c1 in clauses:
-        for c2 in filter(lambda c: c != c1 and c not in selected, clauses):
+        visited.add(c1)
+        for c2 in filter(lambda c: c not in visited, clauses):
             if not (c1.sos or c2.sos): continue
 
-            select = False
             for literal in c1.literals:
                 if negate(literal) in c2.literals:
-                    select = True
+                    yield (c1, c2)
                     break
-            
-            if select:
-                selected.add(c1)
-                yield (c1, c2)
 
 def resolve(c1: Clause, c2: Clause):
-    resolvents = set()
-    
     res_literals = set()
+
     for literal in c1.literals:
         if negate(literal) not in c2.literals:
             res_literals.add(literal)
     for literal in c2.literals:
         if negate(literal) not in c1.literals:
             res_literals.add(literal)
-    raw_clause = Clause.sep.join(res_literals)
-    resolvent = Clause(raw_clause, True) if raw_clause else None
-
-    resolvents.add(resolvent)
     
-    return resolvents
+    raw_clause = Clause.sep.join(res_literals)
+    return Clause(raw_clause, True) if raw_clause else None
 
 def print_resolution_result(goal, conclusion):
     print(f"[CONCLUSION]: {goal} is {'true' if conclusion else 'unknown'}")
 
 def resolution(clauses: 'set[Clause]', goal: Clause):
-    goal_negation = goal.negation()
-    clauses.update(goal_negation)
+    clauses.update(goal.negation())
 
-    clauses = remove_redundant(clauses)
-    clauses = remove_irrelevant(clauses)
+    clauses = set(remove_redundant(remove_irrelevant(clauses)))
 
-    new = set()
-
-    # TODO
+    # TODO print
     """ for i, clause_i in enumerate(clauses, start=1):
         print(f"{i}. {clause_i}")
     print_dashed_ln() """
 
-    resolved = set()
+    new = set()
     while True:
-        # clauses = remove_redundant(clauses)
         for (c1, c2) in select_clauses(clauses):
-            if frozenset({c1, c2}) in resolved: continue
-
-            resolvents = resolve(c1, c2)
-
-            resolved.add(frozenset({c1, c2}))
-            if None in resolvents: return goal, True
-            new.update(resolvents)
+            resolvent = resolve(c1, c2)
+            if resolvent is None: return goal, True
+            new.add(resolvent)
         if new.issubset(clauses): return goal, False
 
         clauses.update(new)
