@@ -1,4 +1,5 @@
 import argparse
+from collections import deque
 
 class Clause:
     sep = " v "
@@ -10,7 +11,7 @@ class Clause:
         self.parents = parents
     
     def __repr__(self):
-        return Clause.sep.join(self.literals)
+        return "NIL" if self.nil else Clause.sep.join(self.literals)
     
     def __eq__(self, other: 'Clause'):
         return self.literals == other.literals
@@ -27,8 +28,6 @@ class Clause:
                 return True
 
         return False
-
-def print_dashed_ln(len=15): print('=' * len)
 
 def negate(literal: str):
     return f"~{literal}" if literal[0] != '~' else literal[1:]
@@ -71,23 +70,75 @@ def resolve(c1: Clause, c2: Clause):
     raw_clause = Clause.sep.join(res_literals)
     return Clause(raw_clause, True, (c1, c2))
 
+def print_dashed_ln(len=15): print('=' * len)
+
 def print_resolution_result(
+    input_clauses: 'deque[Clause]',
     goal: Clause,
-    conclusion: bool
+    conclusion: bool,
+    resolvent: Clause,
 ):
+    def indexed_clause(index: int, clause: Clause):
+        indexed_clause = f"{index}. {clause}"
+        if clause.parents:
+            parent_index = sorted(map(lambda p: clause_index[p], clause.parents))
+            indexed_clause += f" ({parent_index[0]}, {parent_index[1]})"
+        return indexed_clause
+    
+    if not conclusion:
+        for index, clause in enumerate(input_clauses, start=1):
+            print(indexed_clause(index, clause))
+    else:
+        input_clauses = deque()
+        goal_negation, goal_negation_clauses = goal.negation(), deque()
+        other_clauses = deque()
+
+        queue = deque([resolvent])
+        while queue:
+            clause = queue.popleft()
+            if clause.parents:
+                if not clause.nil: other_clauses.appendleft(clause)
+                queue.extend(clause.parents)
+            elif clause in goal_negation:
+                goal_negation_clauses.appendleft(clause)
+            else:
+                input_clauses.appendleft(clause)
+        
+        input_clauses = deque(dict.fromkeys(input_clauses))
+        goal_negation_clauses = deque(dict.fromkeys(goal_negation_clauses))
+        other_clauses = deque(dict.fromkeys(other_clauses))
+        
+        input_clauses.extend(goal_negation_clauses)
+        clause_index = {clause: i for i, clause in enumerate(input_clauses, 1)}
+        next_i = len(clause_index) + 1
+        clause_index.update({clause: i for i, clause in enumerate(other_clauses, next_i)})
+        next_i = len(clause_index) + 1
+
+        for clause in input_clauses:
+            print(indexed_clause(clause_index[clause], clause))
+        print_dashed_ln()
+        for clause in other_clauses:
+            print(indexed_clause(clause_index[clause], clause))
+        print(indexed_clause(next_i, resolvent))
+    print_dashed_ln()
     print(f"[CONCLUSION]: {goal} is {'true' if conclusion else 'unknown'}")
 
 def resolution(clauses: 'set[Clause]', goal: Clause):
-    clauses.update(goal.negation())
+    input_clauses = deque(clauses)
+
+    goal_negation = goal.negation()
+    clauses.update(goal_negation)
+    input_clauses.extend(goal_negation)
+
     clauses = set(remove_redundant(remove_irrelevant(clauses)))
 
     new = set()
     while True:
         for (c1, c2) in select_clauses(clauses):
             resolvent = resolve(c1, c2)
-            if resolvent.nil: return goal, True
+            if resolvent.nil: return input_clauses, goal, True, resolvent
             new.add(resolvent)
-        if new.issubset(clauses): return goal, False
+        if new.issubset(clauses): return input_clauses, goal, False, None
 
         clauses.update(new)
 
@@ -139,6 +190,7 @@ def main():
     clauses, goal = input_clauses(lines(args.clauses))
 
     if args.task == "resolution":
+        # print(goal)
         print_resolution_result(*resolution(clauses, goal))
     elif args.task == "cooking":
         user_cmds = input_user_cmds(lines(args.user_cmds))
