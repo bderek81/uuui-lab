@@ -20,12 +20,12 @@ class Clause:
         return hash(self.literals)
     
     def negation(self):
-        return {Clause(negate(lit), sos=True) for lit in self.literals}
+        return {Clause(negated(lit), sos=True) for lit in self.literals}
     
     def is_tautology(self):
-        return any(negate(lit) in self.literals for lit in self.literals)
+        return any(negated(lit) in self.literals for lit in self.literals)
 
-def negate(lit: str):
+def negated(lit: str):
     return f"~{lit}" if lit[0] != '~' else lit[1:]
 
 def remove_redundant(clauses: 'set[Clause]'):
@@ -41,23 +41,21 @@ def select_clauses(clauses: 'set[Clause]'):
         for c2 in filter(lambda c: c not in visited, clauses):
             if not (c1.sos or c2.sos): continue
 
-            for lit in c1.literals:
-                if negate(lit) in c2.literals:
-                    yield (c1, c2)
-                    break
+            if any(negated(lit) in c2.literals for lit in c1.literals):
+                yield (c1, c2)
 
 def resolve(c1: Clause, c2: Clause):
     c1_res_lits = set(c1.literals)
 
     res_by = None
     for lit in c1.literals:
-        if negate(lit) in c2.literals:
+        if negated(lit) in c2.literals:
             if res_by is not None: return None
             res_by = lit
             c1_res_lits.remove(res_by)
     
     c2_res_lits = set(c2.literals)
-    c2_res_lits.remove(negate(res_by))
+    c2_res_lits.remove(negated(res_by))
     
     raw_clause = Clause.sep.join(c1_res_lits.union(c2_res_lits))
     return Clause(raw_clause, sos=True, parents=(c1, c2))
