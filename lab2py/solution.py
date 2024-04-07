@@ -58,16 +58,19 @@ def select_clauses(clauses: 'set[Clause]'):
                     break
 
 def resolve(c1: Clause, c2: Clause):
-    res_literals = set()
+    c1_res_literals = set(c1.literals)
 
-    for literal in c1.literals:
-        if negate(literal) not in c2.literals:
-            res_literals.add(literal)
-    for literal in c2.literals:
-        if negate(literal) not in c1.literals:
-            res_literals.add(literal)
+    res_by = None
+    for lit in c1.literals:
+        if negate(lit) in c2.literals:
+            if res_by is not None: return None
+            res_by = lit
+            c1_res_literals.remove(res_by)
     
-    raw_clause = Clause.sep.join(res_literals)
+    c2_res_literals = set(c2.literals)
+    c2_res_literals.remove(negate(res_by))
+    
+    raw_clause = Clause.sep.join(c1_res_literals.union(c2_res_literals))
     return Clause(raw_clause, True, (c1, c2))
 
 def print_dashed_ln(len=15): print('=' * len)
@@ -75,7 +78,6 @@ def print_dashed_ln(len=15): print('=' * len)
 def print_resolution_result(
     input_clauses: 'deque[Clause]',
     goal: Clause,
-    conclusion: bool,
     resolvent: Clause,
 ):
     def indexed_clause(index: int, clause: Clause):
@@ -85,6 +87,7 @@ def print_resolution_result(
             indexed_clause += f" ({parent_index[0]}, {parent_index[1]})"
         return indexed_clause
     
+    conclusion = resolvent is not None
     if not conclusion:
         for index, clause in enumerate(input_clauses, start=1):
             print(indexed_clause(index, clause))
@@ -127,8 +130,8 @@ def resolution(clauses: 'set[Clause]', goal: Clause):
     input_clauses = deque(clauses)
 
     goal_negation = goal.negation()
-    clauses.update(goal_negation)
     input_clauses.extend(goal_negation)
+    clauses.update(goal_negation)
 
     clauses = set(remove_redundant(remove_irrelevant(clauses)))
 
@@ -136,9 +139,10 @@ def resolution(clauses: 'set[Clause]', goal: Clause):
     while True:
         for (c1, c2) in select_clauses(clauses):
             resolvent = resolve(c1, c2)
-            if resolvent.nil: return input_clauses, goal, True, resolvent
-            new.add(resolvent)
-        if new.issubset(clauses): return input_clauses, goal, False, None
+            if resolvent is not None:
+                if resolvent.nil: return input_clauses, goal, resolvent
+                new.add(resolvent)
+        if new.issubset(clauses): return input_clauses, goal, None
 
         clauses.update(new)
 
