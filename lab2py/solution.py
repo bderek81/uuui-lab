@@ -3,9 +3,11 @@ import argparse
 class Clause:
     sep = " v "
 
-    def __init__(self, raw_clause: str, sos=False):
+    def __init__(self, raw_clause: str, sos=False, parents: 'tuple[Clause]' = None):
         self.literals = frozenset(raw_clause.split(Clause.sep))
         self.sos = sos
+        self.nil = not raw_clause
+        self.parents = parents
     
     def __repr__(self):
         return Clause.sep.join(self.literals)
@@ -67,26 +69,23 @@ def resolve(c1: Clause, c2: Clause):
             res_literals.add(literal)
     
     raw_clause = Clause.sep.join(res_literals)
-    return Clause(raw_clause, True) if raw_clause else None
+    return Clause(raw_clause, True, (c1, c2))
 
-def print_resolution_result(goal, conclusion):
+def print_resolution_result(
+    goal: Clause,
+    conclusion: bool
+):
     print(f"[CONCLUSION]: {goal} is {'true' if conclusion else 'unknown'}")
 
 def resolution(clauses: 'set[Clause]', goal: Clause):
     clauses.update(goal.negation())
-
     clauses = set(remove_redundant(remove_irrelevant(clauses)))
-
-    # TODO print
-    """ for i, clause_i in enumerate(clauses, start=1):
-        print(f"{i}. {clause_i}")
-    print_dashed_ln() """
 
     new = set()
     while True:
         for (c1, c2) in select_clauses(clauses):
             resolvent = resolve(c1, c2)
-            if resolvent is None: return goal, True
+            if resolvent.nil: return goal, True
             new.add(resolvent)
         if new.issubset(clauses): return goal, False
 
