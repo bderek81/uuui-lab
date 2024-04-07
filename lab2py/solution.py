@@ -129,8 +129,7 @@ def resolution(clauses: 'set[Clause]', goal: Clause):
 
 def cooking(clauses: 'set[Clause]', user_cmds):
     print(f"Constructed with knowledge:")
-    for clause in clauses:
-        print(f"{clause}")
+    for c in clauses: print(c)
 
     for (clause, cmd) in user_cmds:
         print(f"User's command: {clause} {cmd}")
@@ -175,7 +174,6 @@ def main():
     clauses, goal = input_clauses(lines(args.clauses))
 
     if args.task == "resolution":
-        print(goal)
         print_resolution_result(*resolution(clauses, goal))
     elif args.task == "cooking":
         user_cmds = input_user_cmds(lines(args.user_cmds))
