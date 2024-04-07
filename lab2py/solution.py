@@ -10,14 +10,14 @@ class Clause:
         self.parents = parents
         self.nil = not raw_clause
     
-    def __repr__(self):
-        return "NIL" if self.nil else Clause.sep.join(self.literals)
-    
     def __eq__(self, other: 'Clause'):
         return self.literals == other.literals
     
     def __hash__(self):
         return hash(self.literals)
+    
+    def __repr__(self):
+        return Clause.sep.join(self.literals) if not self.nil else "NIL"
     
     def negation(self):
         return {Clause(negated(lit), sos=True) for lit in self.literals}
@@ -45,12 +45,11 @@ def select_clauses(clauses: 'set[Clause]'):
                 yield (c1, c2)
 
 def resolve(c1: Clause, c2: Clause):
-    c1_res_lits = set(c1.literals)
-
-    res_by = None
+    c1_res_lits, res_by = set(c1.literals), None
     for lit in c1.literals:
         if negated(lit) in c2.literals:
             if res_by is not None: return None
+
             res_by = lit
             c1_res_lits.remove(res_by)
     
@@ -60,13 +59,26 @@ def resolve(c1: Clause, c2: Clause):
     raw_clause = Clause.sep.join(c1_res_lits.union(c2_res_lits))
     return Clause(raw_clause, sos=True, parents=(c1, c2))
 
+def resolution(clauses: 'set[Clause]', goal: Clause):
+    input_clauses, goal_negation = deque(clauses), goal.negation()
+    input_clauses.extend(goal_negation)
+
+    clauses.update(goal_negation)
+    clauses = remove_redundant(remove_irrelevant(clauses))
+    new = set()
+    while True:
+        for (c1, c2) in select_clauses(clauses):
+            resolvent = resolve(c1, c2)
+            if resolvent is not None:
+                if resolvent.nil: return input_clauses, goal, resolvent
+                new.add(resolvent)
+        if new.issubset(clauses): return input_clauses, goal, None
+
+        clauses.update(new)
+
 def print_dashed_ln(len=15): print('=' * len)
 
-def print_resolution_result(
-    input_clauses: 'deque[Clause]',
-    goal: Clause,
-    resolvent: Clause,
-):
+def print_resolution_result(input_clauses: 'deque[Clause]', goal: Clause, resolvent: Clause):
     def print_indexed(clauses: 'deque[Clause]'):
         for c in clauses:
             indexed_c = f"{clause_index[c]}. {c}"
@@ -107,26 +119,6 @@ def print_resolution_result(
         print_dashed_ln()
     print(f"[CONCLUSION]: {goal} is {'true' if conclusion else 'unknown'}")
 
-def resolution(clauses: 'set[Clause]', goal: Clause):
-    input_clauses = deque(clauses)
-
-    goal_negation = goal.negation()
-    input_clauses.extend(goal_negation)
-    clauses.update(goal_negation)
-
-    clauses = remove_redundant(remove_irrelevant(clauses))
-
-    new = set()
-    while True:
-        for (c1, c2) in select_clauses(clauses):
-            resolvent = resolve(c1, c2)
-            if resolvent is not None:
-                if resolvent.nil: return input_clauses, goal, resolvent
-                new.add(resolvent)
-        if new.issubset(clauses): return input_clauses, goal, None
-
-        clauses.update(new)
-
 def cooking(clauses: 'set[Clause]', user_cmds):
     print(f"Constructed with knowledge:")
     for c in clauses: print(c)
@@ -146,10 +138,10 @@ def cooking(clauses: 'set[Clause]', user_cmds):
 def lines(file):
     return [line.rstrip().lower() for line in open(file) if line[0] != '#']
 
-def input_clauses(lines):
+def input_clauses(lines: 'list[str]'):
     return {Clause(line) for line in lines[:-1]}, Clause(lines[-1])
 
-def input_user_cmds(lines):
+def input_user_cmds(lines: 'list[str]'):
     return (
         (Clause(raw_clause), cmd)
         for raw_clause, cmd in map(lambda l: l.rsplit(maxsplit = 1), lines)
