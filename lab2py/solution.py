@@ -28,8 +28,8 @@ class Clause:
 def negated(lit: str):
     return f"~{lit}" if lit[0] != '~' else lit[1:]
 
-def remove_redundant(clauses: 'set[Clause]'):
-    return {c for c in clauses if not any(c0.literals < c.literals for c0 in clauses)}
+def remove_redundant(clauses: 'set[Clause]', other: 'set[Clause]'):
+    return {c for c in clauses if not any(c0.literals < c.literals for c0 in other)}
 
 def remove_irrelevant(clauses: 'set[Clause]'):
     return {c for c in clauses if not c.is_tautology()}
@@ -64,7 +64,8 @@ def resolution(clauses: 'set[Clause]', goal: Clause):
     input_clauses.extend(goal_negation)
 
     clauses.update(goal_negation)
-    clauses = remove_redundant(remove_irrelevant(clauses))
+    clauses = remove_irrelevant(clauses)
+    clauses = remove_redundant(clauses, clauses)
     new = set()
     while True:
         for (c1, c2) in select_clauses(clauses):
@@ -72,6 +73,7 @@ def resolution(clauses: 'set[Clause]', goal: Clause):
             if resolvent is not None:
                 if resolvent.nil: return input_clauses, goal, resolvent
                 new.add(resolvent)
+        new = remove_redundant(new, clauses)
         if new.issubset(clauses): return input_clauses, goal, None
 
         clauses.update(new)
