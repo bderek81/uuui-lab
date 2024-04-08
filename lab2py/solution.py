@@ -45,18 +45,17 @@ def select_clauses(clauses: 'set[Clause]'):
                 yield (c1, c2)
 
 def resolve(c1: Clause, c2: Clause):
-    c1_res_lits, res_by = set(c1.literals), None
+    res_by = None
     for lit in c1.literals:
         if negated(lit) in c2.literals:
             if res_by is not None: return None
-
             res_by = lit
-            c1_res_lits.remove(res_by)
+
+    res_literals = set(c1.literals.union(c2.literals))
+    res_literals.remove(res_by)
+    res_literals.remove(negated(res_by))
     
-    c2_res_lits = set(c2.literals)
-    c2_res_lits.remove(negated(res_by))
-    
-    raw_clause = Clause.sep.join(c1_res_lits.union(c2_res_lits))
+    raw_clause = Clause.sep.join(res_literals)
     return Clause(raw_clause, sos=True, parents=(c1, c2))
 
 def resolution(clauses: 'set[Clause]', goal: Clause):
@@ -64,7 +63,7 @@ def resolution(clauses: 'set[Clause]', goal: Clause):
     input_clauses.extend(goal_negation)
 
     clauses.update(goal_negation)
-    clauses = remove_irrelevant(clauses)
+    clauses = remove_irrelevant(clauses) # deletion strategy
     clauses = remove_redundant(clauses, clauses)
     new = set()
     while True:
