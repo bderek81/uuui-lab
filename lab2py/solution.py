@@ -39,7 +39,7 @@ def select_clauses(clauses: 'set[Clause]'):
     for c1 in clauses:
         visited.add(c1)
         for c2 in filter(lambda c: c not in visited, clauses):
-            if not (c1.sos or c2.sos): continue
+            if not (c1.sos or c2.sos): continue # set-of-support strategy
 
             if any(negated(lit) in c2.literals for lit in c1.literals):
                 yield (c1, c2)
@@ -101,7 +101,7 @@ def print_resolution_result(input_clauses: 'deque[Clause]', goal: Clause, resolv
             if clause.parents:
                 derived_clauses.appendleft(clause)
                 queue.extend(clause.parents)
-            elif clause in goal.negation():
+            elif clause.sos:
                 input_clauses.append(clause)
             else:
                 input_clauses.appendleft(clause)
@@ -146,7 +146,7 @@ def input_clauses(lines: 'list[str]'):
 def input_user_cmds(lines: 'list[str]'):
     return (
         (Clause(raw_clause), cmd)
-        for raw_clause, cmd in map(lambda l: l.rsplit(maxsplit = 1), lines)
+        for raw_clause, cmd in map(lambda l: l.rsplit(maxsplit=1), lines)
     )
 
 def parse_arguments():
