@@ -74,9 +74,11 @@ def resolution(clauses: 'set[Clause]', goal: Clause):
                 if resolvent.nil: return input_clauses, goal, resolvent
                 new.add(resolvent)
         new = remove_redundant(new, clauses)
+        clauses = remove_redundant(clauses, new)
         if new.issubset(clauses): return input_clauses, goal, None
 
         clauses.update(new)
+        new.clear()
 
 def print_dashed_ln(len=15): print('=' * len)
 
