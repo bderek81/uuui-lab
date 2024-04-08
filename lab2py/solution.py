@@ -123,7 +123,7 @@ def print_resolution_result(input_clauses: 'deque[Clause]', goal: Clause, resolv
 
 def cooking(clauses: 'set[Clause]', user_cmds):
     print(f"Constructed with knowledge:")
-    for c in clauses: print(c)
+    print(*clauses, sep='\n')
 
     for (clause, cmd) in user_cmds:
         print(f"User's command: {clause} {cmd}")
