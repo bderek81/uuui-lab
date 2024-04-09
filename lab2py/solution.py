@@ -62,13 +62,15 @@ def resolution(clauses: 'set[Clause]', goal: Clause):
     clauses.update(goal.negation())
     clauses = remove_irrelevant(clauses) # deletion strategy
     clauses = remove_redundant(clauses, clauses)
-    new = set()
+    new, resolved = set(), set()
     while True:
         for (c1, c2) in select_clauses(clauses):
+            if (c1, c2) in resolved or (c2, c1) in resolved: continue
             resolvent = resolve(c1, c2)
             if resolvent is not None:
                 if resolvent.nil: return goal, resolvent
                 new.add(resolvent)
+            resolved.add((c1, c2))
         
         new = remove_redundant(new, clauses)
         clauses = remove_redundant(clauses, new)
