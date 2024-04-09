@@ -120,7 +120,7 @@ def print_resolution_result(input_clauses: 'deque[Clause]', goal: Clause, resolv
     if conclusion:
         print_indexed(derived_clauses)
         print_dashed_ln()
-    print(f"[CONCLUSION]: {goal} is {'true' if conclusion else 'unknown'}")
+    print(f"[CONCLUSION]: {goal} is {'true' if conclusion else 'unknown'}\n")
 
 def cooking(clauses: 'set[Clause]', user_cmds):
     print(f"Constructed with knowledge:")
@@ -133,10 +133,10 @@ def cooking(clauses: 'set[Clause]', user_cmds):
             print_resolution_result(*resolution(clauses.copy(), clause))
         elif cmd == '+':
             clauses.add(clause)
-            print(f"Added {clause}")
+            print(f"Added {clause}\n")
         elif cmd == '-':
             clauses.remove(clause)
-            print(f"removed {clause}")
+            print(f"removed {clause}\n")
 
 def lines(file):
     return [line.rstrip().lower() for line in open(file) if line[0] != '#']
