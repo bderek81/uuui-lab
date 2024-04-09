@@ -59,10 +59,7 @@ def resolve(c1: Clause, c2: Clause):
     return Clause(raw_clause, sos=True, parents=(c1, c2))
 
 def resolution(clauses: 'set[Clause]', goal: Clause):
-    input_clauses, goal_negation = deque(clauses), goal.negation()
-    input_clauses.extend(goal_negation)
-
-    clauses.update(goal_negation)
+    clauses.update(goal.negation())
     clauses = remove_irrelevant(clauses) # deletion strategy
     clauses = remove_redundant(clauses, clauses)
     new = set()
@@ -70,18 +67,19 @@ def resolution(clauses: 'set[Clause]', goal: Clause):
         for (c1, c2) in select_clauses(clauses):
             resolvent = resolve(c1, c2)
             if resolvent is not None:
-                if resolvent.nil: return input_clauses, goal, resolvent
+                if resolvent.nil: return goal, resolvent
                 new.add(resolvent)
+        
         new = remove_redundant(new, clauses)
         clauses = remove_redundant(clauses, new)
-        if new.issubset(clauses): return input_clauses, goal, None
+        if new.issubset(clauses): return goal, None
 
         clauses.update(new)
         new.clear()
 
 def print_dashed_ln(len=15): print('=' * len)
 
-def print_resolution_result(input_clauses: 'deque[Clause]', goal: Clause, resolvent: Clause):
+def print_resolution_result(goal: Clause, resolvent: Clause):
     def print_indexed(clauses: 'deque[Clause]'):
         for c in clauses:
             indexed_c = f"{clause_index[c]}. {c}"
@@ -91,9 +89,7 @@ def print_resolution_result(input_clauses: 'deque[Clause]', goal: Clause, resolv
             print(indexed_c)
     
     conclusion = resolvent is not None
-    if not conclusion:
-        clause_index = {c: i for i, c in enumerate(input_clauses, 1)}
-    else:
+    if conclusion:
         input_clauses, derived_clauses = deque(), deque()
 
         queue = deque([resolvent])
@@ -112,12 +108,11 @@ def print_resolution_result(input_clauses: 'deque[Clause]', goal: Clause, resolv
 
         derived_clauses = deque(dict.fromkeys(derived_clauses))
         clause_index.update(
-            {c: i for i, c in enumerate(derived_clauses, len(clause_index) + 1)}
+            {c: i for i, c in enumerate(derived_clauses, len(clause_index)+1)}
         )
 
-    print_indexed(input_clauses)
-    print_dashed_ln()
-    if conclusion:
+        print_indexed(input_clauses)
+        print_dashed_ln()
         print_indexed(derived_clauses)
         print_dashed_ln()
     print(f"[CONCLUSION]: {goal} is {'true' if conclusion else 'unknown'}")
