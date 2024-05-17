@@ -32,11 +32,11 @@ class ID3:
             return Leaf(v)
         
         IG_Dx = sorted(
-            map(lambda x: (IG(D, x, y), x), X),
-            key=lambda ig_x: (-ig_x[0], ig_x[1])
+            map(lambda x: (x, IG(D, x, y)), X),
+            key=lambda x_ig: (-x_ig[1], x_ig[0])
         )
         print_information_gain(IG_Dx)
-        x = IG_Dx[0][1]
+        x = IG_Dx[0][0]
 
         node = Node(x)
         V_x = {row[x] for row in D}
@@ -89,8 +89,10 @@ class ID3:
         print_confusion_matrix(confusion_matrix)
 
 def most_common(iterable):
-    e_cnt = Counter(iterable).most_common()
-    return sorted(filter(lambda z: z[1] == e_cnt[0][1], e_cnt))[0][0]
+    return sorted(
+        Counter(iterable).most_common(),
+        key=lambda v_cnt: (-v_cnt[1], v_cnt[0])
+    )[0][0]
 
 def entropy(D: 'list[dict]', y: str):
     pmf_y = map(
@@ -110,7 +112,7 @@ def IG(D: 'list[dict]', x: str, y: str):
     return entropy(D, y) - sum / len(D)
 
 def print_information_gain(IG_Dx: 'list[tuple[float, str]]'):
-    print(' '.join(map(lambda ig_x: f"IG({ig_x[1]})={ig_x[0]:.4f}", IG_Dx)))
+    print(' '.join(map(lambda x_ig: f"IG({x_ig[0]})={x_ig[1]:.4f}", IG_Dx)))
 
 def print_branches(tree: 'Leaf | Node', string="", level=1):
     if type(tree) == Leaf:
