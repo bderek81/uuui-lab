@@ -7,51 +7,50 @@ class Leaf:
         self.value = value
 
 class Node:
-    def __init__(self, feature: str, subtrees: 'list[Node]'=None):
+    def __init__(self, feature: str):
         self.feature = feature
-        self.subtrees = subtrees if subtrees else []
+        self.subtrees = []
 
 class ID3:
     def __init__(self, id3_depth: int):
         self.depth = id3_depth
     
-    def id3(self, D, D_parent, X: 'list[str]', y: str, depth=0):
+    def id3(self, D: list, D_parent: list, X: 'list[str]', y: str, depth=1):
         if depth > self.depth:
-            return None
-        
+            v = most_common(row[y] for row in D)
+            return Leaf(v)
+
         if not D:
-            v = Counter(row[y] for row in D_parent).most_common(1)[0][0]
+            v = most_common(row[y] for row in D_parent)
             return Leaf(v)
         
-        v = Counter(row[y] for row in D).most_common(1)[0][0]
+        v = most_common(row[y] for row in D)
         if not X or all(map(lambda row: row[y]==v, D)):
             return Leaf(v)
         
-        x, max = None, -inf
-        igs = []
+        ig_list = []
+        x, max = str(), -inf
         for x_i in X:
             ig_x = information_gain(D, x_i, y)
-            igs.append((x_i, ig_x))
+            ig_list.append((x_i, ig_x))
             if ig_x > max:
                 x, max = x_i, ig_x
-        print(' '.join(map(lambda z: f"IG({z[0]})={z[1]:.4f}", sorted(igs, key=lambda znj: znj[1], reverse=True))))
+        print(' '.join(map(lambda z: f"IG({z[0]})={z[1]:.4f}", sorted(ig_list, key=lambda w: w[1], reverse=True))))
 
+        node = Node(x)
         V_x = Counter(row[x] for row in D).most_common()
-        subtrees = []
         for v, _ in V_x:
-            X_cpy = X.copy()
-            X_cpy.remove(x)
-            t = self.id3(list(filter(lambda row: row[x]==v, D)), D, X_cpy, y, depth+1)
-            subtrees.append((v, t)) if t is not None else None
-        return Node(x, subtrees)
+            t = self.id3(list(filter(lambda row: row[x]==v, D)), D, list(filter(lambda z: z!=x, X)), y, depth+1)
+            node.subtrees.append((v, t)) if t is not None else None
+        return node
 
     def fit(self, train_dataset: str):
         D = input_csv(train_dataset)
-        
         fields = list(D[0].keys())
         X, y = sorted(fields[:-1]), fields[-1]
+
         self.decision_tree = self.id3(D, D, X, y)
-        print(f"[BRANCHES]:")
+        print("[BRANCHES]:")
         ID3.print_branches(self.decision_tree)
     
     @staticmethod
@@ -88,14 +87,18 @@ class ID3:
         for row in D:
             decision = ID3.decide(self.decision_tree, row)
             if decision is None:
-                decision = sorted(Counter(row[y] for row in D).most_common(), key=lambda z: z[0])[0][0]
+                decision = most_common(row[y] for row in D)
             
+            predictions += f" {decision}"
             correct += decision==row[y]
             confusion_matrix[index_dict[row[y]]][index_dict[decision]] += 1
-            predictions += f" {decision}"
         print(predictions)
         print(f"[ACCURACY]: {correct / total:.5f}")
         print_confusion_matrix(confusion_matrix)
+
+def most_common(iterable):
+    e_cnt = Counter(iterable).most_common()
+    return sorted(filter(lambda z: z[1] == e_cnt[0][1], e_cnt))[0][0]
 
 def entropy(D: list, y: str):
     K = Counter(row[y] for row in D).most_common()
@@ -112,15 +115,12 @@ def information_gain(D: list, x: str, y: str):
     return entropy(D, y) - sum / len(D)
 
 def print_confusion_matrix(confusion_matrix: 'list[list[int]]'):
-    print(f"[CONFUSION_MATRIX]:")
+    print("[CONFUSION_MATRIX]:")
     for row in confusion_matrix:
         print(*row)
 
 def input_csv(file: str):
-    with open(file) as csvfile:
-        reader = csv.DictReader(csvfile)
-
-        return [row for row in reader]
+    return [row for row in csv.DictReader(open(file))]
 
 def parse_arguments():
     parser = argparse.ArgumentParser()
