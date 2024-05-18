@@ -16,19 +16,14 @@ class ID3:
         self.depth = id3_depth
     
     def id3(self, 
-        D: 'list[dict]', D_parent: 'list[dict]',
-        X: 'list[str]', y: str, depth=1
+        D: 'list[dict]', D_parent: 'list[dict]', X: 'list[str]', y: str, depth=1
     ):
-        if depth > self.depth:
-            v = most_common(row[y] for row in D)
-            return Leaf(v)
-
         if not D:
             v = most_common(row[y] for row in D_parent)
             return Leaf(v)
         
         v = most_common(row[y] for row in D)
-        if not X or all(map(lambda row: row[y] == v, D)):
+        if not X or all(map(lambda row: row[y] == v, D)) or depth > self.depth:
             return Leaf(v)
         
         IG_Dx = sorted(
@@ -58,7 +53,8 @@ class ID3:
     
     @staticmethod
     def decide(tree: 'Leaf | Node', row: dict):
-        if type(tree) == Leaf: return tree.value
+        if type(tree) == Leaf:
+            return tree.value
 
         for v, t in tree.subtrees:
             if row[tree.feature] == v:
@@ -125,7 +121,8 @@ def print_branches(tree: 'Leaf | Node', string="", level=1):
 
 def print_confusion_matrix(confusion_matrix: 'list[list[int]]'):
     print("[CONFUSION_MATRIX]:")
-    for row in confusion_matrix: print(*row)
+    for row in confusion_matrix:
+        print(*row)
 
 def input_csv(file: str) -> 'list[dict]':
     return [row for row in csv.DictReader(open(file))]
