@@ -1,6 +1,6 @@
 import argparse, csv
-from math import inf, log2
 from collections import Counter
+from math import inf, log2
 
 class Leaf:
     def __init__(self, value: str):
@@ -39,16 +39,16 @@ class ID3:
         x = IG_Dx[0][0]
 
         node = Node(x)
-        V_x = {row[x] for row in D}
-        for v in V_x:
+        for v in V(x, D):
             D_xv = list(filter(lambda row: row[x] == v, D))
             X_x = list(filter(lambda x_i: x_i != x, X))
+
             t = self.id3(D_xv, D, X_x, y, depth+1)
             node.subtrees.append((v, t))
         return node
 
-    def fit(self, train_dataset: str):
-        D = input_csv(train_dataset)
+    def fit(self, data: str):
+        D = input_csv(data)
         fields = list(D[0].keys())
         X, y = sorted(fields[:-1]), fields[-1]
 
@@ -58,23 +58,22 @@ class ID3:
     
     @staticmethod
     def decide(tree: 'Leaf | Node', row: dict):
-        if type(tree) == Leaf:
-            return tree.value
+        if type(tree) == Leaf: return tree.value
 
         for v, t in tree.subtrees:
             if row[tree.feature] == v:
                 return ID3.decide(t, row)
 
-    def predict(self, test_dataset: str):
-        D = input_csv(test_dataset)
+    def predict(self, data: str):
+        D = input_csv(data)
         y = list(D[0].keys())[-1]
         
-        labels = sorted({row[y] for row in D})
-        confusion_matrix = [[0 for _ in labels] for _ in labels]
+        labels = sorted(V(y, D))
         label_index = {l_i: i for i, l_i in enumerate(labels)}
         
         predictions = "[PREDICTIONS]:"
         correct, total = 0, len(D)
+        confusion_matrix = [[0 for _ in labels] for _ in labels]
         for row in D:
             decision = ID3.decide(self.tree, row)
             if decision is None:
@@ -94,6 +93,9 @@ def most_common(iterable):
         key=lambda v_cnt: (-v_cnt[1], v_cnt[0])
     )[0][0]
 
+def V(x: str, D: 'list[dict]'):
+    return {row[x] for row in D}
+
 def entropy(D: 'list[dict]', y: str):
     pmf_y = map(
         lambda cnt: cnt / len(D),
@@ -103,13 +105,12 @@ def entropy(D: 'list[dict]', y: str):
     return -sum(P_yi * log2(P_yi) for P_yi in pmf_y)
 
 def IG(D: 'list[dict]', x: str, y: str):
-    sum = 0
-    V_x = {row[x] for row in D}
-    for v in V_x:
+    sigma = 0
+    for v in V(x, D):
         D_xv = list(filter(lambda row: row[x] == v, D))
-        sum += len(D_xv) * entropy(D_xv, y)
+        sigma += len(D_xv) / len(D) * entropy(D_xv, y)
     
-    return entropy(D, y) - sum / len(D)
+    return entropy(D, y) - sigma
 
 def print_information_gain(IG_Dx: 'list[tuple[float, str]]'):
     print(' '.join(map(lambda x_ig: f"IG({x_ig[0]})={x_ig[1]:.4f}", IG_Dx)))
@@ -124,8 +125,7 @@ def print_branches(tree: 'Leaf | Node', string="", level=1):
 
 def print_confusion_matrix(confusion_matrix: 'list[list[int]]'):
     print("[CONFUSION_MATRIX]:")
-    for row in confusion_matrix:
-        print(*row)
+    for row in confusion_matrix: print(*row)
 
 def input_csv(file: str) -> 'list[dict]':
     return [row for row in csv.DictReader(open(file))]
