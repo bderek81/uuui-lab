@@ -23,7 +23,8 @@ class ID3:
             return Leaf(v)
         
         v = most_common(row[y] for row in D)
-        if not X or all(map(lambda row: row[y] == v, D)) or depth > self.depth:
+        if not X or all(map(lambda row: row[y] == v, D)) \
+        or depth > self.depth:
             return Leaf(v)
         
         IG_Dx = sorted(
@@ -48,7 +49,8 @@ class ID3:
         X, y = sorted(fields[:-1]), fields[-1]
 
         self.tree = self.id3(D, D, X, y)
-        print("[BRANCHES]:")
+
+        print(f"[BRANCHES]:")
         print_branches(self.tree)
     
     @staticmethod
@@ -67,7 +69,7 @@ class ID3:
         labels = sorted(V(y, D))
         label_index = {l_i: i for i, l_i in enumerate(labels)}
         
-        predictions = "[PREDICTIONS]:"
+        predictions = ""
         correct, total = 0, len(D)
         confusion_matrix = [[0 for _ in labels] for _ in labels]
         for row in D:
@@ -79,9 +81,10 @@ class ID3:
             correct += decision == row[y]
             confusion_matrix[label_index[row[y]]][label_index[decision]] += 1
         
-        print(predictions)
+        print(f"[PREDICTIONS]:{predictions}")
         print(f"[ACCURACY]: {correct / total:.5f}")
-        print_confusion_matrix(confusion_matrix)
+        print(f"[CONFUSION_MATRIX]:")
+        for row in confusion_matrix: print(*row)
 
 def most_common(iterable):
     return sorted(
@@ -109,7 +112,9 @@ def IG(D: 'list[dict]', x: str, y: str):
     return entropy(D, y) - sigma
 
 def print_information_gain(IG_Dx: 'list[tuple[float, str]]'):
-    print(' '.join(map(lambda x_ig: f"IG({x_ig[0]})={x_ig[1]:.4f}", IG_Dx)))
+    print(' '.join(map(
+        lambda x_ig: f"IG({x_ig[0]})={x_ig[1]:.4f}", IG_Dx
+    )))
 
 def print_branches(tree: 'Leaf | Node', string="", level=1):
     if type(tree) == Leaf:
@@ -118,11 +123,6 @@ def print_branches(tree: 'Leaf | Node', string="", level=1):
     
     for v, t in tree.subtrees:
         print_branches(t, ' '.join((string, f"{level}:{tree.feature}={v}")), level+1)
-
-def print_confusion_matrix(confusion_matrix: 'list[list[int]]'):
-    print("[CONFUSION_MATRIX]:")
-    for row in confusion_matrix:
-        print(*row)
 
 def input_csv(file: str) -> 'list[dict]':
     return [row for row in csv.DictReader(open(file))]
