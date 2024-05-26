@@ -1,21 +1,21 @@
 import argparse, numpy as np
 from heapq import nsmallest
 from itertools import islice
-from random import random, sample
+from random import sample
 
 class NeuralNet:
     def __init__(self, layers: 'tuple[int]', init_weights=True):
         self.layers = layers
         self.mse = np.inf
         if not init_weights: return
-        self.weights = [
+        self.weights = np.asarray([
             np.random.normal(0, 0.01, (layer, prev_layer))
             for prev_layer, layer in zip(layers, islice(layers, 1, None))
-        ]
-        self.biases = [
+        ], dtype=object)
+        self.biases = np.asarray([
             np.random.normal(0, 0.01, layer)
             for layer in islice(layers, 1, None)
-        ]
+        ], dtype=object)
     
     def __lt__(self, other: 'NeuralNet'):
         return self.mse < other.mse
@@ -32,14 +32,16 @@ class NeuralNet:
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
-def evaluate(P: 'list[NeuralNet]', data: 'list[list[float]]'):
-    for net in P:
-        net.mse = sum((y - net.NN(x))**2 for *x, y in data) / len(data)
+def evaluate(net: NeuralNet, data: 'list[list[float]]'):
+    return sum((y - net.NN(x))**2 for *x, y in data) / len(data)
 
-def cross(p1: NeuralNet, p2: NeuralNet):
+def cross_mutate_evaluate(p1: NeuralNet, p2: NeuralNet, p: float, K: float, data: 'list[list[float]]'):
     child = NeuralNet(p1.layers, False)
-    child.weights = [(w1 + w2) / 2 for w1, w2 in zip(p1.weights, p2.weights)]
-    child.biases = [(b1 + b2) / 2 for b1, b2 in zip(p1.biases, p2.biases)]
+    child.weights = (p1.weights + p2.weights) / 2 \
+        + np.random.normal(0, K, p1.weights.shape) * np.random.binomial(1, p, p1.weights.shape)
+    child.biases = (p1.biases + p2.biases) / 2  \
+        + np.random.normal(0, K, p1.biases.shape) * np.random.binomial(1, p, p1.biases.shape)
+    child.mse = evaluate(child, data)
 
     return child
 
@@ -47,24 +49,20 @@ def genetic_algorithm(
         P: 'list[NeuralNet]', data: 'list[list[float]]',
         elitism: int, p: float, K: float, iter: int
     ):
-    evaluate(P, data)
+    for net in P:
+        net.mse = evaluate(net, data)
     for i in range(1, iter + 1):
         if i % 2000 == 0:
             print(f"[Train error @{i}]: {min(P).mse:.6f}")
         
         new_P = nsmallest(elitism, P)
-        while len(new_P) < len(P):
-            child = cross(*sample(P, 2))
-            new_P.append(child)
-        
-        for net in new_P:
-            for weight, bias in zip(net.weights, net.biases):
-                weight += np.random.normal(0, K, size=weight.shape) * (random() < p)
-                bias += np.random.normal(0, K, size=bias.shape) * (random() < p)
+        new_P.extend(
+            cross_mutate_evaluate(*sample(P, 2), p, K, data)
+            for _ in range(len(P) - elitism)
+        )
 
         P = new_P.copy()
-        evaluate(P, data)
-    return P
+    return min(P)
 
 def make_population(layers: 'tuple[int]', popsize: int):
     return [NeuralNet(layers) for _ in range(popsize)]
@@ -96,13 +94,12 @@ def main():
     test = input_csv(args.test)
 
     layers = len(train[0]) - 1, *map(int, args.nn[:-1].split('s')), 1
-    P = genetic_algorithm(
+    net = genetic_algorithm(
         make_population(layers, args.popsize), train,
         args.elitism, args.p, args.K, args.iter
     )
 
-    evaluate(P, test)
-    print(f"[Test error]: {min(P).mse:.6f}")
+    print(f"[Test error]: {evaluate(net, test):.6f}")
 
 if __name__ == "__main__":
     main()
