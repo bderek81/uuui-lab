@@ -4,39 +4,37 @@ from itertools import islice
 from random import random, sample
 
 class NeuralNet:
-    def __init__(self, layers: 'tuple[int]', init_wb=True):
+    def __init__(self, layers: 'tuple[int]', init_weights=True):
         self.layers = layers
-        self.weights = [None for _ in range(len(self.layers) - 1)]
-        self.biases = [None for _ in range(len(self.layers) - 1)]
-        self.init_weights_biases() if init_wb else None
         self.mse = np.inf
+        if not init_weights: return
+        self.weights = [
+            np.random.normal(0, 0.01, (layer, prev_layer))
+            for prev_layer, layer in zip(layers, islice(layers, 1, None))
+        ]
+        self.biases = [
+            np.random.normal(0, 0.01, layer)
+            for layer in islice(layers, 1, None)
+        ]
     
     def __lt__(self, other: 'NeuralNet'):
         return self.mse < other.mse
     
-    def init_weights_biases(self):
-        for i in range(len(self.weights)):
-            self.weights[i] = np.random.normal(0, 0.01, (self.layers[i + 1], self.layers[i]))
-            self.biases[i] = np.random.normal(0, 0.01, self.layers[i + 1])
-    
     def NN(self, x: 'list[float]'):
         x = np.array(x)
         for i, (weight, bias) in enumerate(zip(self.weights, self.biases)):
-            x = np.matmul(weight, x) + bias
+            x = weight @ x + bias
             if i == len(self.weights) - 1:
                 break
             x = sigmoid(x)
-        return x
+        return x[0]
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
 
 def evaluate(P: 'list[NeuralNet]', data: 'list[list[float]]'):
-    for neural_net in P:
-        neural_net.mse = sum(
-            np.square(y - neural_net.NN(x))
-            for *x, y in data
-        ) / len(data)
+    for net in P:
+        net.mse = sum((y - net.NN(x))**2 for *x, y in data) / len(data)
 
 def cross(p1: NeuralNet, p2: NeuralNet):
     child = NeuralNet(p1.layers, False)
@@ -50,17 +48,17 @@ def genetic_algorithm(
         elitism: int, p: float, K: float, iter: int
     ):
     evaluate(P, data)
-    for i in range(iter):
-        if (i + 1) % 2000 == 0:
-            print(f"[Train error @{i + 1}]: {nsmallest(1, P)[0].mse[0]:.6f}")
+    for i in range(1, iter + 1):
+        if i % 2000 == 0:
+            print(f"[Train error @{i}]: {min(P).mse:.6f}")
         
         new_P = nsmallest(elitism, P)
         while len(new_P) < len(P):
             child = cross(*sample(P, 2))
             new_P.append(child)
         
-        for neural_net in P:
-            for weight, bias in zip(neural_net.weights, neural_net.biases):
+        for net in new_P:
+            for weight, bias in zip(net.weights, net.biases):
                 weight += np.random.normal(0, K, size=weight.shape) * (random() < p)
                 bias += np.random.normal(0, K, size=bias.shape) * (random() < p)
 
@@ -104,7 +102,7 @@ def main():
     )
 
     evaluate(P, test)
-    print(f"[Test error]: {nsmallest(1, P)[0].mse[0]:.6f}")
+    print(f"[Test error]: {min(P).mse:.6f}")
 
 if __name__ == "__main__":
     main()
