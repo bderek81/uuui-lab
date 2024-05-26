@@ -1,7 +1,6 @@
 import argparse, numpy as np
 from heapq import nlargest
 from itertools import islice
-from random import sample
 
 class NeuralNet:
     def __init__(self, layers: 'tuple[int]', init_weights=True):
@@ -21,7 +20,7 @@ class NeuralNet:
         return self.fit() < other.fit()
     
     def fit(self):
-        return -self.mse
+        return 1 / (self.mse + 0.001)
     
     def NN(self, x: 'list[float]'):
         x = np.array(x)
@@ -58,9 +57,14 @@ def genetic_algorithm(
         if i % 2000 == 0:
             print(f"[Train error @{i}]: {max(P).mse:.6f}")
         
+        sigma = sum(net.fit() for net in P)
+        selection = [net.fit() / sigma for net in P]
+
         new_P = nlargest(elitism, P)
         new_P.extend(
-            cross_mutate_evaluate(*sample(P, 2), p, K, data)
+            cross_mutate_evaluate(
+                *np.random.choice(P, 2, False, selection), p, K, data
+            )
             for _ in range(len(P) - elitism)
         )
 
