@@ -1,5 +1,5 @@
 import argparse, numpy as np
-from heapq import nsmallest
+from heapq import nlargest
 from itertools import islice
 from random import sample
 
@@ -18,7 +18,10 @@ class NeuralNet:
         ], dtype=object)
     
     def __lt__(self, other: 'NeuralNet'):
-        return self.mse < other.mse
+        return self.fit() < other.fit()
+    
+    def fit(self):
+        return -self.mse
     
     def NN(self, x: 'list[float]'):
         x = np.array(x)
@@ -53,16 +56,16 @@ def genetic_algorithm(
         net.mse = evaluate(net, data)
     for i in range(1, iter + 1):
         if i % 2000 == 0:
-            print(f"[Train error @{i}]: {min(P).mse:.6f}")
+            print(f"[Train error @{i}]: {max(P).mse:.6f}")
         
-        new_P = nsmallest(elitism, P)
+        new_P = nlargest(elitism, P)
         new_P.extend(
             cross_mutate_evaluate(*sample(P, 2), p, K, data)
             for _ in range(len(P) - elitism)
         )
 
         P = new_P.copy()
-    return min(P)
+    return max(P)
 
 def make_population(layers: 'tuple[int]', popsize: int):
     return [NeuralNet(layers) for _ in range(popsize)]
