@@ -67,8 +67,8 @@ def genetic_algorithm(
     for i in range(1, iter + 1):
         new_P = nlargest(elitism, P)
         new_P.extend(
-            cross_mutate_evaluate(p1, p2, p, K, x, y)
-            for p1, p2 in select(P, len(P) - elitism)
+            cross_mutate_evaluate(*parents, p, K, x, y)
+            for parents in select(P, len(P) - elitism)
         )
         P = new_P
 
