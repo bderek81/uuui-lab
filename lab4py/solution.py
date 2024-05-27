@@ -3,10 +3,10 @@ from heapq import nlargest
 from itertools import islice
 
 class NeuralNet:
-    def __init__(self, layers: 'tuple[int]', init_weights=True):
+    def __init__(self, layers: 'tuple[int]', set_weights=True):
         self.layers = layers
         self.mse = np.inf
-        if not init_weights: return
+        if not set_weights: return
         self.weights = [
             np.random.normal(0, 0.01, (prev_layer, layer))
             for prev_layer, layer in zip(layers, islice(layers, 1, None))
@@ -52,24 +52,24 @@ def cross_mutate_evaluate(p1: NeuralNet, p2: NeuralNet, p: float, K: float, x, y
 
     return child
 
-def select(P: 'list[NeuralNet]', size: int, p_sel: 'list[float]'):
-    return np.random.choice(P, size, False, p_sel)
+def select(P: 'list[NeuralNet]', size: int):
+    sigma = sum(j.fit() for j in P)
+    p_sel = [i.fit() / sigma for i in P]
+
+    return (np.random.choice(P, 2, False, p_sel) for _ in range(size))
 
 def genetic_algorithm(
         P: 'list[NeuralNet]', x, y,
         elitism: int, p: float, K: float, iter: int
     ):
-    for net in P: net.mse = evaluate(net, x, y)
+    for net in P:
+        net.mse = evaluate(net, x, y)
     for i in range(1, iter + 1):
         new_P = nlargest(elitism, P)
-
-        sigma = sum(net.fit() for net in P)
-        p_sel = [net.fit() / sigma for net in P]
         new_P.extend(
-            cross_mutate_evaluate(*select(P, 2, p_sel), p, K, x, y)
-            for _ in range(len(P) - elitism)
+            cross_mutate_evaluate(p1, p2, p, K, x, y)
+            for p1, p2 in select(P, len(P) - elitism)
         )
-
         P = new_P
 
         if i % 2000 == 0:
@@ -97,7 +97,7 @@ def parse_arguments():
     parser.add_argument("--elitism", type=int)
     parser.add_argument("--p", type=float)
     parser.add_argument("--K", type=float)
-    parser.add_argument("--iter", type=int)    
+    parser.add_argument("--iter", type=int)
     
     return parser.parse_args()
 
