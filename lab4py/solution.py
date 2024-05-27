@@ -70,7 +70,7 @@ def genetic_algorithm(
             for _ in range(len(P) - elitism)
         )
 
-        P = new_P.copy()
+        P = new_P
 
         if i % 2000 == 0:
             print(f"[Train error @{i}]: {max(P).mse:.6f}")
