@@ -20,7 +20,7 @@ class NeuralNet:
         return self.fit() < other.fit()
     
     def fit(self):
-        return 1 / (self.mse + 0.001)
+        return 1 / (max(self.mse, 1e-9))
     
     def NN(self, x):
         for i in range(len(self.weights)):
@@ -104,6 +104,7 @@ def parse_arguments():
 def main():
     args = parse_arguments()
 
+    np.random.seed(3)
     x_train, y_train = input_csv(args.train)
     x_test, y_test = input_csv(args.test)
 
