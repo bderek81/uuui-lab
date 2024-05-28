@@ -6,7 +6,8 @@ class NeuralNet:
     def __init__(self, layers: 'tuple[int]', set_weights=True):
         self.layers = layers
         self.mse = np.inf
-        if not set_weights: return
+        if not set_weights:
+            return
         self.weights = [
             np.random.normal(0, 0.01, (prev_layer, layer))
             for prev_layer, layer in zip(layers, islice(layers, 1, None))
@@ -22,19 +23,16 @@ class NeuralNet:
     def fit(self):
         return 1 / (max(self.mse, 1e-9))
     
+    def evaluate(self, x, y):
+        self.mse = np.mean(np.square(y - self.NN(x)))
+    
     def NN(self, x):
         for i in range(len(self.weights)):
             x = x @ self.weights[i] + self.biases[i]
-            if i == len(self.weights) - 1:
-                break
-            x = sigmoid(x)
-        return x.T[0]
+            x = sigmoid(x) if i < len(self.weights) - 1 else x.T[0]
+        return x
 
-def sigmoid(x):
-    return 1 / (1 + np.exp(-x))
-
-def evaluate(net: NeuralNet, x, y):
-    return np.mean(np.square(y - net.NN(x)))
+sigmoid = lambda x: 1 / (1 + np.exp(-x))
 
 def cross_mutate_evaluate(p1: NeuralNet, p2: NeuralNet, p: float, K: float, x, y):
     child = NeuralNet(p1.layers, False)
@@ -48,7 +46,7 @@ def cross_mutate_evaluate(p1: NeuralNet, p2: NeuralNet, p: float, K: float, x, y
             np.random.normal(0, K, b1.shape) * np.random.binomial(1, p, b1.shape)
         for b1, b2 in zip(p1.biases, p2.biases)
     ]
-    child.mse = evaluate(child, x, y)
+    child.evaluate(x, y)
 
     return child
 
@@ -63,7 +61,7 @@ def genetic_algorithm(
         elitism: int, p: float, K: float, iter: int
     ):
     for net in P:
-        net.mse = evaluate(net, x, y)
+        net.evaluate(x, y)
     for i in range(1, iter + 1):
         new_P = nlargest(elitism, P)
         new_P.extend(
@@ -109,12 +107,14 @@ def main():
     x_test, y_test = input_csv(args.test)
 
     layers = len(x_train[0]), *map(int, args.nn[:-1].split('s')), 1
+
     net = genetic_algorithm(
-        make_population(layers, args.popsize), 
-        x_train, y_train, args.elitism, 
-        args.p, args.K, args.iter
+        make_population(layers, args.popsize),
+        x_train, y_train,
+        args.elitism, args.p, args.K, args.iter
     )
-    print(f"[Test error]: {evaluate(net, x_test, y_test):.6f}")
+    net.evaluate(x_test, y_test)
+    print(f"[Test error]: {net.mse:.6f}")
 
 if __name__ == "__main__":
     main()
